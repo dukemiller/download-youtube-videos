@@ -20,7 +20,7 @@ def get_path() -> PathResult:
             return PathResult(successful=False, path=path)
         path = os.path.join(os.path.expanduser("~"), "Downloads")
 
-    elif not os.path.exists(path):
+    if not os.path.exists(path):
         question = input("Path does not exist. Create? [y/n]: ")
         while not question == "y" and not question == "n":
             question = input("Path does not exist. Create? [y/n]: ")
@@ -31,7 +31,9 @@ def get_path() -> PathResult:
     return PathResult(successful=True, path=path)
 
 
-def get_information_from(url: str) -> UrlResult:
+def get_url_information() -> UrlResult:
+
+    url = input("Enter url: ").strip()
 
     if 'youtube' not in url and 'youtu.be' not in url:
         return UrlResult(successful=False, url=url, type='')
@@ -63,17 +65,18 @@ def get_videos_from(result: UrlResult) -> Iterable[Video]:
 
 
 def main():
+
+    url_information = get_url_information()
+    if not url_information.successful:
+        exit("Malformed url.")
+
     path = get_path()
     if not path.successful:
         exit("Unable to proceed.")
 
-    result = get_information_from(input("Enter url: ").strip())
-    if not result.successful:
-        exit("Malformed url.")
-
-    for video in get_videos_from(result):
-        if video.is_not_in(path):
-            video.download_to(path) \
+    for video in get_videos_from(url_information):
+        if video.is_not_in(path.path):
+            video.download_to(path.path) \
                  .then_encode(in_new_thread=True) \
                  .and_remove_unencoded_file()
 
