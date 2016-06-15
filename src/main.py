@@ -1,14 +1,79 @@
+from collections import namedtuple
+from typing import Iterable
 from youtube import Video
+import pafy
+import os
+
+UrlResult = namedtuple('Result', 'successful url type')
+PathResult = namedtuple('Result', 'successful path')
+
+
+def get_path() -> PathResult:
+
+    path = input("Download path: ")
+
+    if path == "":
+        question = input("Default to users download folder? [y/n]: ")
+        while not question == "y" and not question == "n":
+            question = input("Default to users download folder? [y/n]: ")
+        path = os.path.join(os.path.expanduser("~"), "Downloads")
+
+    elif not os.path.exists(path):
+        question = input("Path does not exist. Create? [y/n]: ")
+        while not question == "y" and not question == "n":
+            question = input("Path does not exist. Create? [y/n]: ")
+        if question == "n":
+            return PathResult(successful=False, path=path)
+        os.makedirs(path)
+
+    return PathResult(successful=True, path=path)
+
+
+def get_information_from(url: str) -> UrlResult:
+
+    if 'youtube' not in url and 'youtu.be' not in url:
+        return UrlResult(successful=False, url=url, type='')
+
+    if '&list=' in url:
+        playlist_id = url.split("&list=")[1].split("=")[0]
+        url = "https://www.youtube.com/playlist?list={0}".format(playlist_id)
+        return UrlResult(successful=True, url=url, type='playlist')
+
+    if '/playlist?list' in url:
+        playlist_id = url.split("/playlist?list=")[1].split("=")[0]
+        url = "https://www.youtube.com/playlist?list={0}".format(playlist_id)
+        return UrlResult(successful=True, url=url, type='playlist')
+
+    return UrlResult(successful=True, url=url, type='single_video')
+
+
+def get_videos_from(result: UrlResult) -> Iterable[Video]:
+
+    if result.type == "single_video":
+        yield Video(result.url)
+
+    elif result.type == "playlist":
+        for video in pafy.get_playlist(result.url)['items']:
+            yield Video(video['pafy'])
+
+    else:
+        yield []
 
 
 def main():
-    video = Video("https://youtu.be/RHFVIH-TewM")
-    path = r"c:\users\duke\downloads"
+    path = get_path()
+    if not path.successful:
+        exit("Unable to proceed.")
 
-    if video.is_not_in(path):
-        video.download_to(path)\
-            .then_encode(in_new_thread=True)\
-            .and_remove_unencoded_file()
+    result = get_information_from(input("Enter url: ").strip())
+    if not result.successful:
+        exit("Malformed url.")
+
+    for video in get_videos_from(result):
+        if video.is_not_in(path):
+            video.download_to(path) \
+                 .then_encode(in_new_thread=True) \
+                 .and_remove_unencoded_file()
 
 if __name__ == '__main__':
     main()

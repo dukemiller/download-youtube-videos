@@ -10,8 +10,11 @@ class Video:
 
     _filename = "{}.{}"
 
-    def __init__(self, url, audio=True):
-        self.pafy_object = pafy.new(url)
+    def __init__(self, url_or_pafy_object, audio=True):
+        if type(url_or_pafy_object) is str:
+            self.pafy_object = pafy.new(url_or_pafy_object)
+        else:
+            self.pafy_object = url_or_pafy_object
         self.stream = self.pafy_object.getbestaudio() if audio else self.pafy_object.getbestvideo()
         self.desired_extension = "mp3" if audio else "mp4"
         self.title = self.stream.title
