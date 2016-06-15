@@ -16,6 +16,8 @@ def get_path() -> PathResult:
         question = input("Default to users download folder? [y/n]: ")
         while not question == "y" and not question == "n":
             question = input("Default to users download folder? [y/n]: ")
+        if question == "n":
+            return PathResult(successful=False, path=path)
         path = os.path.join(os.path.expanduser("~"), "Downloads")
 
     elif not os.path.exists(path):
