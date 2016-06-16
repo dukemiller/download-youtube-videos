@@ -38,7 +38,12 @@ class Video:
         print("Downloading {0}".format(self._details()))
 
         download_path = os.path.join(directory, self.file_name())
-        self.stream.download(filepath=download_path, quiet=True)
+
+        try:
+            self.stream.download(filepath=download_path, quiet=True)
+        except PermissionError:
+            exit("Permission error with the given directory. "
+                 "This is usually an unrecoverable error, so execution will terminate here.")
 
         return DownloadedVideo(self, directory, download_path)
 

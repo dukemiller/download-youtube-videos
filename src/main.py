@@ -1,6 +1,7 @@
 from collections import namedtuple
 from typing import Iterable
-from youtube import Video
+from video import Video
+import sys
 import pafy
 import os
 
@@ -8,9 +9,10 @@ UrlResult = namedtuple('Result', 'successful url type')
 DirectoryResult = namedtuple('Result', 'successful path')
 
 
-def get_directory() -> DirectoryResult:
+def get_directory(path: str = None) -> DirectoryResult:
 
-    path = input("Download path: ")
+    if path is None:
+        path = input("Download path: ")
 
     if path == "":
         question = input("Default to users download folder? [y/n]: ")
@@ -31,9 +33,10 @@ def get_directory() -> DirectoryResult:
     return DirectoryResult(successful=True, path=path)
 
 
-def get_url_information() -> UrlResult:
+def get_url_information(url: str = None) -> UrlResult:
 
-    url = input("Enter url: ").strip()
+    if url is None:
+        url = input("Enter url: ").strip()
 
     if 'youtube' not in url and 'youtu.be' not in url:
         return UrlResult(successful=False, url=url, type='')
@@ -52,25 +55,34 @@ def get_url_information() -> UrlResult:
 
 
 def get_videos_from(result: UrlResult) -> Iterable[Video]:
-
     if result.type == "single_video":
         yield Video(result.url)
 
     elif result.type == "playlist":
-        for video in pafy.get_playlist(result.url)['items']:
-            yield Video(video['pafy'])
+        try:
+            for video in pafy.get_playlist(result.url)['items']:
+                yield Video(video['pafy'])
+        except ValueError:
+            print("Playlist is missing/private.")
+            yield []
 
     else:
         yield []
 
 
 def main():
+    if len(args) > 1:
+        if len(args) < 3:
+            exit("Incorrect number of arguments.")
+        url, path = args[1:]
+    else:
+        url, path = None, None
 
-    url_information = get_url_information()
+    url_information = get_url_information(url)
     if not url_information.successful:
         exit("Malformed url.")
 
-    directory = get_directory()
+    directory = get_directory(path)
     if not directory.successful:
         exit("Unable to proceed.")
 
@@ -81,4 +93,5 @@ def main():
                  .and_remove_unencoded_file()
 
 if __name__ == '__main__':
+    args = sys.argv
     main()
