@@ -5,10 +5,10 @@ import pafy
 import os
 
 UrlResult = namedtuple('Result', 'successful url type')
-PathResult = namedtuple('Result', 'successful path')
+DirectoryResult = namedtuple('Result', 'successful path')
 
 
-def get_path() -> PathResult:
+def get_directory() -> DirectoryResult:
 
     path = input("Download path: ")
 
@@ -17,7 +17,7 @@ def get_path() -> PathResult:
         while not question == "y" and not question == "n":
             question = input("Default to users download folder? [y/n]: ")
         if question == "n":
-            return PathResult(successful=False, path=path)
+            return DirectoryResult(successful=False, path=path)
         path = os.path.join(os.path.expanduser("~"), "Downloads")
 
     if not os.path.exists(path):
@@ -25,10 +25,10 @@ def get_path() -> PathResult:
         while not question == "y" and not question == "n":
             question = input("Path does not exist. Create? [y/n]: ")
         if question == "n":
-            return PathResult(successful=False, path=path)
+            return DirectoryResult(successful=False, path=path)
         os.makedirs(path)
 
-    return PathResult(successful=True, path=path)
+    return DirectoryResult(successful=True, path=path)
 
 
 def get_url_information() -> UrlResult:
@@ -70,13 +70,13 @@ def main():
     if not url_information.successful:
         exit("Malformed url.")
 
-    path = get_path()
-    if not path.successful:
+    directory = get_directory()
+    if not directory.successful:
         exit("Unable to proceed.")
 
     for video in get_videos_from(url_information):
-        if video.is_not_in(path.path):
-            video.download_to(path.path) \
+        if video.is_not_in(directory.path):
+            video.download_to(directory.path) \
                  .then_encode(in_new_thread=True) \
                  .and_remove_unencoded_file()
 
