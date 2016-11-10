@@ -32,7 +32,7 @@ class Video:
         return self.encoded_file_name() not in os.listdir(path)
 
     def _details(self) -> str:
-        return '"{0}" ===== [{1}] @ {2} (around ~{3} MB)'.format(self.title, self.pafy_object.duration, self.stream.bitrate, self.size())
+        return '"{0}" ===== [{1}] @ {2} (around ~{3} MB)'.format(self.title.encode("utf-8").decode("ascii", "replace"), self.pafy_object.duration, self.stream.bitrate, self.size())
 
     def download_to(self, directory) -> 'DownloadedVideo':
         print("Downloading {0}".format(self._details()))

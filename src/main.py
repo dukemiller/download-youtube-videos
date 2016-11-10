@@ -61,13 +61,13 @@ def get_videos_from(result: UrlResult) -> Iterable[Video]:
     elif result.type == "playlist":
         try:
             for video in pafy.get_playlist(result.url)['items']:
-                yield Video(video['pafy'])
+                try:
+                    yield Video(video['pafy'])
+                except:
+                    continue
+
         except ValueError:
             print("Playlist is missing/private.")
-            yield []
-
-    else:
-        yield []
 
 
 def main():
