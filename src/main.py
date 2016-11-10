@@ -33,25 +33,37 @@ def get_directory(path: str = None) -> DirectoryResult:
     return DirectoryResult(successful=True, path=path)
 
 
-def get_url_information(url: str = None) -> UrlResult:
+def get_url_information(urls: Iterable[str] = None) -> Iterable[UrlResult]:
 
-    if url is None:
-        url = input("Enter url: ").strip()
+    if urls is None:
+        urls = input("Enter url/s: ")
 
-    if 'youtube' not in url and 'youtu.be' not in url:
-        return UrlResult(successful=False, url=url, type='')
+    collection = []
 
-    if '&list=' in url:
-        playlist_id = url.split("&list=")[1].split("=")[0]
-        url = "https://www.youtube.com/playlist?list={0}".format(playlist_id)
-        return UrlResult(successful=True, url=url, type='playlist')
+    for url in urls.lstrip(" ").strip().replace("\s+", "\s").split(" "):
 
-    if '/playlist?list' in url:
-        playlist_id = url.split("/playlist?list=")[1].split("=")[0]
-        url = "https://www.youtube.com/playlist?list={0}".format(playlist_id)
-        return UrlResult(successful=True, url=url, type='playlist')
+        if 'youtube' not in url and 'youtu.be' not in url:
+            collection.append(UrlResult(successful=False, url=url, type=''))
 
-    return UrlResult(successful=True, url=url, type='single_video')
+        # id exists
+        if "?v=" in url:
+            url = url.split("&")[0]
+            collection.append(UrlResult(successful=True, url=url, type='single_video'))
+
+        elif '&list=' in url:
+            playlist_id = url.split("&list=")[1].split("=")[0]
+            url = "https://www.youtube.com/playlist?list={0}".format(playlist_id)
+            collection.append(UrlResult(successful=True, url=url, type='playlist'))
+
+        elif '/playlist?list' in url:
+            playlist_id = url.split("/playlist?list=")[1].split("=")[0]
+            url = "https://www.youtube.com/playlist?list={0}".format(playlist_id)
+            collection.append(UrlResult(successful=True, url=url, type='playlist'))
+
+        else:
+            collection.append(UrlResult(successful=True, url=url, type='single_video'))
+
+    return collection
 
 
 def get_videos_from(result: UrlResult) -> Iterable[Video]:
@@ -72,25 +84,29 @@ def get_videos_from(result: UrlResult) -> Iterable[Video]:
 
 def main():
     if len(args) > 1:
-        if len(args) < 3:
+        if len(args) == 2:
             exit("Incorrect number of arguments.")
-        url, path = args[1:]
-    else:
-        url, path = None, None
+        path, urls = args[1], args[2:]
 
-    url_information = get_url_information(url)
-    if not url_information.successful:
-        exit("Malformed url.")
+    else:
+        path, urls = None, None
 
     directory = get_directory(path)
+
     if not directory.successful:
         exit("Unable to proceed.")
 
-    for video in get_videos_from(url_information):
-        if video.is_not_in(directory.path):
-            video.download_to(directory.path) \
-                 .then_encode(in_new_thread=True) \
-                 .and_remove_unencoded_file()
+    for result in get_url_information(urls):
+
+        if not result.successful:
+            print("Malformed url {0}.".format(result.url))
+            continue
+
+        for video in get_videos_from(result):
+            if video.is_not_in(directory.path):
+                video.download_to(directory.path) \
+                     .then_encode(in_new_thread=True) \
+                     .and_remove_unencoded_file()
 
 if __name__ == '__main__':
     args = sys.argv
