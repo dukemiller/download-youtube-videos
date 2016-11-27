@@ -36,11 +36,13 @@ def get_directory(path: str = None) -> DirectoryResult:
 def get_url_information(urls: Iterable[str] = None) -> Iterable[UrlResult]:
 
     if urls is None:
-        urls = input("Enter url/s: ")
+        urls = input("Enter url/s: ").split(" ")
 
     collection = []
 
-    for url in urls.lstrip(" ").strip().replace("\s+", "\s").split(" "):
+    for url in urls:
+        
+        url = url.lstrip(" ").strip().replace("\s+", "\s")
 
         if 'youtube' not in url and 'youtu.be' not in url:
             collection.append(UrlResult(successful=False, url=url, type=''))
